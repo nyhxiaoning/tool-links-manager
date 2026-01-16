@@ -28,14 +28,59 @@ async function arrayBufferToBase64(buffer: ArrayBuffer): Promise<string> {
   return btoa(binary)
 }
 
-async function base64ToArrayBuffer(base64: string): Promise<ArrayBuffer> {
-  const binary = atob(base64)
+
+/**
+ * 解析 base64数据内容
+ * 对于data这种icon的图标没有兼容，实现一下兼容
+ * @param base64 
+ * @returns 
+ */
+async function base64ToArrayBufferOld(base64: string): Promise<ArrayBuffer> {
+  // 增加这里base64的安全检查
+  const binary = atob((base64))
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i)
   }
   return bytes.buffer
 }
+
+/**
+ * 安全解析 base64 → ArrayBuffer
+ * 不符合规范时返回 null
+ */
+export function base64ToArrayBuffer(
+  base64: string
+): ArrayBuffer | null {
+  if (!base64 || typeof base64 !== 'string') return null
+
+  try {
+    // 1️⃣ 去掉 data URI 前缀（如果有）
+    const pureBase64 = base64.includes(',')
+      ? base64.split(',')[1]
+      : base64
+
+    // 2️⃣ base64 基本合法性校验（宽松）
+    if (!/^[A-Za-z0-9+/=]+$/.test(pureBase64)) {
+      return null
+    }
+
+    // 3️⃣ 解码
+    const binary = atob(pureBase64)
+    const len = binary.length
+    const bytes = new Uint8Array(len)
+
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+
+    return bytes.buffer
+  } catch {
+    // 4️⃣ 任意异常直接降级
+    return null
+  }
+}
+
 
 export async function exportData(): Promise<void> {
   const websites = await db.websites.toArray()

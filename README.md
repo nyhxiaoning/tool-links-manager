@@ -1,4 +1,6 @@
 # 工具集 - 本地化网站管理平台
+## 处理当前的html文件生成JSON
+代码： https://gitee.com/full-stack-interview/bun_py_tools.git
 
 一个纯前端的网站集合管理工具，支持本地数据存储、完整的CRUD操作、json数据格式的导入导出，可打包作为 Chrome 扩展使用。
 
