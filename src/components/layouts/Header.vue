@@ -149,6 +149,8 @@ const handleImportConfirm = async (mode: 'merge' | 'replace') => {
     const result = await importData(pendingImportFile, mode)
     const modeText = mode === 'merge' ? '合并' : '替换'
     alert(`${modeText}成功！\n新增网站: ${result.websites}\n分类: ${result.categories}\n标签: ${result.tags}`)
+    // 增加一个导入成功后，这的网页url进行全局刷新
+    window.location.reload()
   } catch (error) {
     console.error('Failed to import:', error)
     alert('导入失败')
