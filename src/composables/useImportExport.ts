@@ -45,27 +45,43 @@ async function base64ToArrayBufferOld(base64: string): Promise<ArrayBuffer> {
   return bytes.buffer
 }
 
+function isValidHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' || url.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
+
 /**
  * 安全解析 base64 → ArrayBuffer
  * 不符合规范时返回 null
  */
 export function base64ToArrayBuffer(
-  base64: string
-): ArrayBuffer | null {
-  if (!base64 || typeof base64 !== 'string') return null
+  input: unknown
+): ArrayBuffer | string | null {
+  // 0️⃣ 非字符串直接失败
+  if (typeof input !== 'string' || !input.trim()) return null
+
+  // 1️⃣ https URL：直接返回，不做 base64 处理
+  if (isValidHttpsUrl(input)) {
+    return input
+  }
 
   try {
-    // 1️⃣ 去掉 data URI 前缀（如果有）
-    const pureBase64 = base64.includes(',')
-      ? base64.split(',')[1]
-      : base64
+    // 2️⃣ 去掉 data URI 前缀（如果有）
+    const pureBase64 = input.includes(',')
+      ? input.split(',')[1]
+      : input
 
-    // 2️⃣ base64 基本合法性校验（宽松）
+    // 3️⃣ base64 基本合法性校验（宽松）
     if (!/^[A-Za-z0-9+/=]+$/.test(pureBase64)) {
       return null
     }
 
-    // 3️⃣ 解码
+    // 4️⃣ 解码
     const binary = atob(pureBase64)
     const len = binary.length
     const bytes = new Uint8Array(len)
@@ -76,10 +92,11 @@ export function base64ToArrayBuffer(
 
     return bytes.buffer
   } catch {
-    // 4️⃣ 任意异常直接降级
+    // 5️⃣ 任意异常直接降级
     return null
   }
 }
+
 
 
 export async function exportData(): Promise<void> {

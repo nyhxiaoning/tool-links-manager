@@ -1,8 +1,5 @@
 <template>
-  <div
-    @click="handleClick"
-    class="website-card"
-  >
+  <div @click="handleClick" class="website-card">
     <!-- Hover Actions -->
     <div class="card-actions">
       <a
@@ -18,7 +15,11 @@
       <button @click.stop="handleEdit" class="action-btn" title="编辑">
         <i class="mdi mdi-pencil-outline"></i>
       </button>
-      <button @click.stop="handleDelete" class="action-btn action-delete" title="删除">
+      <button
+        @click.stop="handleDelete"
+        class="action-btn action-delete"
+        title="删除"
+      >
         <i class="mdi mdi-delete-outline"></i>
       </button>
     </div>
@@ -40,11 +41,7 @@
         <h3 class="website-name">{{ website.name }}</h3>
         <!-- Categories as tag style -->
         <div class="category-tags" v-if="categoryNames.length > 0">
-          <span
-            v-for="name in categoryNames"
-            :key="name"
-            class="category-tag"
-          >
+          <span v-for="name in categoryNames" :key="name" class="category-tag">
             {{ name }}
           </span>
         </div>
@@ -72,80 +69,97 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, onMounted } from 'vue'
-import type { Website } from '@/types'
-import { useCategories } from '@/composables/useCategories'
-import { useTags } from '@/composables/useTags'
+import { computed, onUnmounted, onMounted } from "vue";
+import type { Website } from "@/types";
+import { useCategories } from "@/composables/useCategories";
+import { useTags } from "@/composables/useTags";
 
 const props = defineProps<{
-  website: Website
-}>()
+  website: Website;
+}>();
 
 const emit = defineEmits<{
-  (e: 'click'): void
-  (e: 'edit'): void
-  (e: 'delete'): void
-}>()
+  (e: "click"): void;
+  (e: "edit"): void;
+  (e: "delete"): void;
+}>();
 
-const { categories, loadCategories } = useCategories()
-const { tags, loadTags } = useTags()
+const { categories, loadCategories } = useCategories();
+const { tags, loadTags } = useTags();
 
 onMounted(() => {
-  loadCategories()
-  loadTags()
-})
+  loadCategories();
+  loadTags();
+});
 
 const iconUrl = computed(() => {
   if (!props.website.icon || props.website.icon.byteLength === 0) {
-    return ''
+    return "";
   }
   try {
-    const blob = new Blob([props.website.icon], { type: props.website.iconMimeType || 'image/png' })
-    return URL.createObjectURL(blob)
+    /// 判断一下，如果是https的图片，则直接返回图片地址
+    function isValidHttpsUrl(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" || url.protocol === "http:";
+      } catch {
+        return false;
+      }
+    }
+
+    if (isValidHttpsUrl(props.website.icon)) {
+      return props.website.icon;
+    }
+    const blob = new Blob([props.website.icon], {
+      type: props.website.iconMimeType || "image/png",
+    });
+    return URL.createObjectURL(blob);
   } catch (error) {
-    console.error('Failed to create icon URL:', error)
-    return ''
+    console.error("Failed to create icon URL:", error);
+    return "";
   }
-})
+});
 
 const category = computed(() => {
-  return categories.value.find(c => (props.website.categoryIds || []).includes(c.id!))
-})
+  return categories.value.find((c) =>
+    (props.website.categoryIds || []).includes(c.id!)
+  );
+});
 
 const categoryNames = computed(() => {
   return (props.website.categoryIds || [])
-    .map(id => categories.value.find(c => c.id === id)?.name)
-    .filter(Boolean) as string[]
-})
+    .map((id) => categories.value.find((c) => c.id === id)?.name)
+    .filter(Boolean) as string[];
+});
 
 const getTagName = (tagId: number) => {
-  const tag = tags.value.find(t => t.id === tagId)
-  return tag?.name || ''
-}
+  const tag = tags.value.find((t) => t.id === tagId);
+  return tag?.name || "";
+};
 
 const handleClick = () => {
-  emit('click')
-}
+  emit("click");
+};
 
 const handleEdit = () => {
-  emit('edit')
-}
+  emit("edit");
+};
 
 const handleDelete = () => {
-  if (confirm('确定要删除这个网站吗？')) {
-    emit('delete')
+  if (confirm("确定要删除这个网站吗？")) {
+    emit("delete");
   }
-}
+};
 
 const handleIconError = () => {
-  console.warn(`Failed to load icon for ${props.website.name}`)
-}
+  console.warn(`Failed to load icon for ${props.website.name}`);
+};
 
 onUnmounted(() => {
   if (iconUrl.value) {
-    URL.revokeObjectURL(iconUrl.value)
+    URL.revokeObjectURL(iconUrl.value);
   }
-})
+});
 </script>
 
 <style scoped>
@@ -211,7 +225,8 @@ onUnmounted(() => {
 }
 
 .neumorphism-theme .action-btn.action-link:hover {
-  box-shadow: 2px 2px 4px rgba(108, 99, 255, 0.3), -1px -1px 3px rgba(139, 132, 255, 0.2);
+  box-shadow: 2px 2px 4px rgba(108, 99, 255, 0.3),
+    -1px -1px 3px rgba(139, 132, 255, 0.2);
 }
 
 .action-btn .mdi {

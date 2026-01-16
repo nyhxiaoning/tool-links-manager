@@ -96,9 +96,14 @@
                     <code class="key-text">{{ maskApiKey(key) }}</code>
                     <button
                       @click="copyApiKey(key)"
-                      :class="['copy-btn', { 'copied': copiedKey === key }]"
+                      :class="['copy-btn', { copied: copiedKey === key }]"
                     >
-                      <i :class="['mdi', copiedKey === key ? 'mdi-check' : 'mdi-content-copy']"></i>
+                      <i
+                        :class="[
+                          'mdi',
+                          copiedKey === key ? 'mdi-check' : 'mdi-content-copy',
+                        ]"
+                      ></i>
                     </button>
                   </div>
                 </div>
@@ -112,94 +117,111 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, watch } from 'vue'
-import type { Website } from '@/types'
-import { useCategories } from '@/composables/useCategories'
-import { useTags } from '@/composables/useTags'
-import { maskApiKey, copyToClipboard, formatDate } from '@/utils/validators'
-import { ref } from 'vue'
+import { computed, onUnmounted, watch } from "vue";
+import type { Website } from "@/types";
+import { useCategories } from "@/composables/useCategories";
+import { useTags } from "@/composables/useTags";
+import { maskApiKey, copyToClipboard, formatDate } from "@/utils/validators";
+import { ref } from "vue";
 
 const props = defineProps<{
-  isOpen: boolean
-  website: Website
-}>()
+  isOpen: boolean;
+  website: Website;
+}>();
 
 const emit = defineEmits<{
-  (e: 'close'): void
-}>()
+  (e: "close"): void;
+}>();
 
-const { categories, loadCategories } = useCategories()
-const { tags, loadTags } = useTags()
+const { categories, loadCategories } = useCategories();
+const { tags, loadTags } = useTags();
 
-const copiedKey = ref<string | null>(null)
+const copiedKey = ref<string | null>(null);
 
-watch(() => props.isOpen, async (isOpen) => {
-  if (isOpen) {
-    await Promise.all([
-      loadCategories(),
-      loadTags()
-    ])
+watch(
+  () => props.isOpen,
+  async (isOpen) => {
+    if (isOpen) {
+      await Promise.all([loadCategories(), loadTags()]);
+    }
   }
-})
+);
 
 const iconUrl = computed(() => {
   if (!props.website.icon || props.website.icon.byteLength === 0) {
-    return ''
+    return "";
   }
   try {
-    const blob = new Blob([props.website.icon], { type: props.website.iconMimeType || 'image/png' })
-    return URL.createObjectURL(blob)
+    /// 判断一下，如果是https的图片，则直接返回图片地址
+    function isValidHttpsUrl(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" || url.protocol === "http:";
+      } catch {
+        return false;
+      }
+    }
+
+    if (isValidHttpsUrl(props.website.icon)) {
+      return props.website.icon;
+    }
+    const blob = new Blob([props.website.icon], {
+      type: props.website.iconMimeType || "image/png",
+    });
+    return URL.createObjectURL(blob);
   } catch (error) {
-    console.error('Failed to create icon URL:', error)
-    return ''
+    console.error("Failed to create icon URL:", error);
+    return "";
   }
-})
+});
 
 const category = computed(() => {
-  return categories.value.find(c => (props.website.categoryIds || []).includes(c.id!))
-})
+  return categories.value.find((c) =>
+    (props.website.categoryIds || []).includes(c.id!)
+  );
+});
 
 const categoryNames = computed(() => {
   return (props.website.categoryIds || [])
-    .map(id => categories.value.find(c => c.id === id)?.name)
-    .filter(Boolean) as string[]
-})
+    .map((id) => categories.value.find((c) => c.id === id)?.name)
+    .filter(Boolean) as string[];
+});
 
 const getTagName = (tagId: number) => {
-  const tag = tags.value.find(t => t.id === tagId)
-  return tag?.name || ''
-}
+  const tag = tags.value.find((t) => t.id === tagId);
+  return tag?.name || "";
+};
 
 const formatUrl = (url: string) => {
   try {
-    const urlObj = new URL(url)
-    return urlObj.hostname + (urlObj.pathname !== '/' ? urlObj.pathname : '')
+    const urlObj = new URL(url);
+    return urlObj.hostname + (urlObj.pathname !== "/" ? urlObj.pathname : "");
   } catch {
-    return url
+    return url;
   }
-}
+};
 
 const handleClose = () => {
-  emit('close')
-}
+  emit("close");
+};
 
 const copyApiKey = async (key: string) => {
-  await copyToClipboard(key)
-  copiedKey.value = key
+  await copyToClipboard(key);
+  copiedKey.value = key;
   setTimeout(() => {
-    copiedKey.value = null
-  }, 2000)
-}
+    copiedKey.value = null;
+  }, 2000);
+};
 
 const handleIconError = () => {
-  console.warn(`Failed to load icon for ${props.website.name}`)
-}
+  console.warn(`Failed to load icon for ${props.website.name}`);
+};
 
 onUnmounted(() => {
   if (iconUrl.value) {
-    URL.revokeObjectURL(iconUrl.value)
+    URL.revokeObjectURL(iconUrl.value);
   }
-})
+});
 </script>
 
 <style scoped>
@@ -223,7 +245,7 @@ onUnmounted(() => {
 }
 
 .neumorphism-theme .drawer-content {
-  box-shadow: -16px 0 32px rgb(163,177,198,0.4);
+  box-shadow: -16px 0 32px rgb(163, 177, 198, 0.4);
 }
 
 /* Header */
@@ -237,7 +259,7 @@ onUnmounted(() => {
 
 .neumorphism-theme .drawer-header {
   border-bottom: none;
-  box-shadow: 0 2px 8px rgb(163,177,198,0.2);
+  box-shadow: 0 2px 8px rgb(163, 177, 198, 0.2);
 }
 
 .header-icon {
@@ -260,7 +282,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    var(--accent-light) 100%
+  );
   color: #ffffff;
 }
 
@@ -355,7 +381,7 @@ onUnmounted(() => {
 }
 
 .neumorphism-theme .info-section {
-  border-bottom-color: rgba(163,177,198,0.15);
+  border-bottom-color: rgba(163, 177, 198, 0.15);
 }
 
 .section-label {
@@ -448,7 +474,7 @@ onUnmounted(() => {
 
 .key-text {
   flex: 1;
-  font-family: 'SF Mono', Monaco, monospace;
+  font-family: "SF Mono", Monaco, monospace;
   font-size: 0.75rem;
   color: var(--text-secondary);
   word-break: break-all;
